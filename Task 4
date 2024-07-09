@@ -1,0 +1,29 @@
+/*MALWARE ANALYSIS SANDBOX*/
+
+import psutil
+import time
+
+def log_process_info(proc):
+    with open("process_log.txt", "a") as log:
+        log.write(f"Time: {time.ctime()}, PID: {proc.pid}, Name: {proc.name()}, CMD: {proc.cmdline()}\n")
+
+def monitor_processes():
+    existing_pids = psutil.pids()
+    while True:
+        current_pids = psutil.pids()
+        new_pids = set(current_pids) - set(existing_pids)
+        terminated_pids = set(existing_pids) - set(current_pids)
+        
+        for pid in new_pids:
+            proc = psutil.Process(pid)
+            log_process_info(proc)
+        
+        for pid in terminated_pids:
+            with open("process_log.txt", "a") as log:
+                log.write(f"Time: {time.ctime()}, PID: {pid} terminated\n")
+        
+        existing_pids = current_pids
+        time.sleep(1)
+
+if __name__ == "__main__":
+    monitor_processes()
