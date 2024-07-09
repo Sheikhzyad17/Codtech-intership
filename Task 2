@@ -1,0 +1,69 @@
+import socket
+import requests
+from subprocess import check_output
+
+def scan_open_ports(target):
+    open_ports = []
+    for port in range(1, 1024):  # Scanning first 1024 ports for simplicity
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(1)
+        result = sock.connect_ex((target, port))
+        if result == 0:
+            open_ports.append(port)
+        sock.close()
+    return open_ports
+
+def check_software_versions(target):
+    # Example: Checking Apache version
+    response = requests.get(f'http://{target}')
+    server_header = response.headers.get('Server', 'Unknown')
+    known_versions = {
+        'Apache': '2.4.48',
+        # Add other software and their current versions here
+    }
+    for software, version in known_versions.items():
+        if software in server_header:
+            current_version = server_header.split('/')[1]
+            if current_version != version:
+                return f'{software} is outdated: {current_version} (should be {version})'
+    return 'All software up to date'
+
+def scan_misconfigurations(target):
+    misconfigurations = []
+    response = requests.get(f'http://{target}')
+    headers = response.headers
+    
+    # Check for HTTP headers
+    if 'X-Content-Type-Options' not in headers:
+        misconfigurations.append('X-Content-Type-Options header missing')
+    if 'X-Frame-Options' not in headers:
+        misconfigurations.append('X-Frame-Options header missing')
+    
+    # Check SSL/TLS
+    try:
+        ssl_output = check_output(['openssl', 's_client', '-connect', f'{target}:443'])
+        if b'weak' in ssl_output:
+            misconfigurations.append('Weak SSL/TLS configuration detected')
+    except Exception as e:
+        misconfigurations.append(f'SSL/TLS scan failed: {str(e)}')
+    
+    return misconfigurations
+
+def vulnerability_scan(target):
+    print(f'Scanning {target} for vulnerabilities...\n')
+    
+    print('Scanning for open ports...')
+    open_ports = scan_open_ports(target)
+    print(f'Open ports: {open_ports}\n')
+    
+    print('Checking software versions...')
+    software_check = check_software_versions(target)
+    print(f'Software check: {software_check}\n')
+    
+    print('Scanning for misconfigurations...')
+    misconfigurations = scan_misconfigurations(target)
+    print(f'Misconfigurations: {misconfigurations}\n')
+
+if __name__ == "__main__":
+    target = 'example.com'  # Replace with the actual target
+    vulnerability_scan(target)
